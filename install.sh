@@ -107,8 +107,14 @@ decrypt_and_setup_workspace() {
         # Terminal interativo normal
         read -s -p "🔐 Senha: " master_password
     else
-        # Executando via pipe (curl | bash) - usar /dev/tty
-        read -s -p "🔐 Senha: " master_password < /dev/tty
+        # Executando via pipe (curl | bash) - tentar múltiplas abordagens
+        if [ -r /dev/tty ]; then
+            read -s -p "🔐 Senha: " master_password < /dev/tty
+        else
+            # Fallback: tentar stdin direto (para ambientes automatizados)
+            echo "🔐 Digite a senha e pressione Enter:"
+            read master_password
+        fi
     fi
     # Remover qualquer quebra de linha no final da senha
     master_password=$(printf '%s' "$master_password" | tr -d '\n\r')
