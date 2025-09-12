@@ -76,7 +76,7 @@ check_basic_requirements() {
 download_encrypted_hub() {
     log $CYAN "📦 Baixando YVENS_TECHNOLOGIES v2.0..."
     
-    local repo_url="https://raw.githubusercontent.com/yvensrabelo/yvens_technologies_v2/main/yvens_hub.enc"
+    local repo_url="https://raw.githubusercontent.com/yvensrabelo/yvens_technologies/main/yvens_hub.enc"
     local encrypted_file="yvens_hub.enc"
     
     # Download com indicador de progresso
