@@ -99,17 +99,19 @@ download_encrypted_hub() {
 # Descriptografar e criar workspace básico
 decrypt_and_setup_workspace() {
     log $CYAN "🔓 Descriptografando YVENS_TECHNOLOGIES v2.0..."
-    # Usar senha padrão para demonstração
-    local master_password="yvenstechnologies2024"
-    
-    log $BLUE "🔑 Usando senha master para acessar o hub:"
-    log $YELLOW "   Senha: yvenstechnologies2024"
+    log $BLUE "🔑 Digite a SENHA MASTER para acessar YVENS_TECHNOLOGIES:"
+    log $YELLOW "   (Solicite a senha ao proprietário do hub)"
+    echo ""
+    read -s -p "🔐 Senha: " master_password
+    # Remover qualquer quebra de linha no final da senha
+    master_password=$(printf '%s' "$master_password" | tr -d '\n\r')
+    echo ""
     echo ""
     
     local temp_tar="yvens_hub_temp.tar.gz"
     
     # Descriptografar com senha
-    if openssl enc -aes-256-cbc -d -salt -in "yvens_hub.enc" -out "$temp_tar" -pass pass:"$master_password"; then
+    if openssl enc -aes-256-cbc -d -salt -in "yvens_hub.enc" -out "$temp_tar" -pass pass:"$master_password" 2>/dev/null; then
         echo ""
         log $GREEN "✅ Hub descriptografado com sucesso!"
         

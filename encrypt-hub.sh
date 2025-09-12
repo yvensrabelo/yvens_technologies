@@ -61,14 +61,22 @@ fi
 log $GREEN "✅ Hub compactado: $(du -h "$TEMP_TAR" | cut -f1)"
 echo ""
 
-# Usar senha padrão para demonstração
-MASTER_PASSWORD="yvenstechnologies2024"
-
-log $BLUE "🔐 Usando senha master padrão para criptografia..."
+log $BLUE "🔐 Digite a SENHA MASTER para criptografar YVENS_TECHNOLOGIES:"
+echo ""
+read -s -p "🔑 Senha: " MASTER_PASSWORD
+echo ""
 echo ""
 
-# Criptografar com senha
-if openssl enc -aes-256-cbc -salt -in "$TEMP_TAR" -out yvens_hub.enc -pass pass:"$MASTER_PASSWORD"; then
+if [ -z "$MASTER_PASSWORD" ]; then
+    log $RED "❌ Senha não pode ser vazia!"
+    exit 1
+fi
+
+log $GREEN "✅ Senha configurada para criptografia"
+echo ""
+
+# Criptografar com senha via stdin para evitar problemas de shell especiais
+if printf '%s' "$MASTER_PASSWORD" | openssl enc -aes-256-cbc -salt -in "$TEMP_TAR" -out yvens_hub.enc -pass stdin; then
     echo ""
     log $GREEN "✅ YVENS_TECHNOLOGIES v2.0 criptografado com sucesso!"
     echo ""
