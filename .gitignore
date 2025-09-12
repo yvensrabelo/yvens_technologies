@@ -1,0 +1,48 @@
+# Arquivos temporários
+*.tmp
+*.temp
+*.log
+*_temp.tar.gz
+yvens_*_install_*/
+
+# Diretórios descriptografados (não versionar)
+ferramentas/
+projetos/
+BMAD/
+me-de-um-nome/
+
+# Arquivos sensíveis
+*.key
+*.pem
+.env
+.env.*
+credentials.env
+secrets/
+
+# Cache e builds
+node_modules/
+dist/
+build/
+.cache/
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Arquivos de desenvolvimento
+.dev_password_hash
+.update_log
+
+# Permitir APENAS arquivos seguros para GitHub
+!README.md
+!install.sh
+!encrypt-hub.sh
+!deploy-to-github.sh
+!yvens_hub.enc
+!.gitignore
+!VERSION
