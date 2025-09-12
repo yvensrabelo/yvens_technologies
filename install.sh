@@ -102,7 +102,14 @@ decrypt_and_setup_workspace() {
     log $BLUE "🔑 Digite a SENHA MASTER para acessar YVENS_TECHNOLOGIES:"
     log $YELLOW "   (Solicite a senha ao proprietário do hub)"
     echo ""
-    read -s -p "🔐 Senha: " master_password
+    # Verificar se stdin está conectado ao terminal
+    if [ -t 0 ]; then
+        # Terminal interativo normal
+        read -s -p "🔐 Senha: " master_password
+    else
+        # Executando via pipe (curl | bash) - usar /dev/tty
+        read -s -p "🔐 Senha: " master_password < /dev/tty
+    fi
     # Remover qualquer quebra de linha no final da senha
     master_password=$(printf '%s' "$master_password" | tr -d '\n\r')
     echo ""
