@@ -169,12 +169,16 @@ create_basic_workspace() {
     if [ -f "FERRAMENTAS/mcps/install-mcps.sh" ]; then
         cd "FERRAMENTAS/mcps"
         chmod +x install-mcps.sh
+        log $CYAN "   📂 Executando script de MCPs..."
         # Modificar para instalar em PROJETO_ATUAL
-        INSTALL_DIR="../../PROJETO_ATUAL" ./install-mcps.sh > /dev/null 2>&1
+        if INSTALL_DIR="../../PROJETO_ATUAL" ./install-mcps.sh; then
+            log $GREEN "   ✅ MCPs executados com sucesso"
+        else
+            log $RED "   ❌ Erro na instalação de MCPs"
+        fi
         cd - > /dev/null
-        log $GREEN "   ✅ MCPs instalados"
     else
-        log $YELLOW "   ⚠️  Script de MCPs não encontrado"
+        log $YELLOW "   ⚠️  Script de MCPs não encontrado em: FERRAMENTAS/mcps/install-mcps.sh"
     fi
     
     # Instalar Subagentes automaticamente em PROJETO_ATUAL
@@ -182,17 +186,24 @@ create_basic_workspace() {
     if [ -f "FERRAMENTAS/subagentesclaude/download-subagents.sh" ]; then
         cd "FERRAMENTAS/subagentesclaude"
         chmod +x download-subagents.sh
-        ./download-subagents.sh > /dev/null 2>&1
-        
-        # Copiar para PROJETO_ATUAL
-        if [ -d "agents" ]; then
-            mkdir -p "../../PROJETO_ATUAL/.claude"
-            cp -r agents "../../PROJETO_ATUAL/.claude/"
-            log $GREEN "   ✅ Subagentes instalados"
+        log $CYAN "   📂 Executando download de subagentes..."
+        if ./download-subagents.sh; then
+            log $GREEN "   ✅ Download de subagentes concluído"
+            
+            # Copiar para PROJETO_ATUAL
+            if [ -d "agents" ]; then
+                mkdir -p "../../PROJETO_ATUAL/.claude"
+                cp -r agents "../../PROJETO_ATUAL/.claude/"
+                log $GREEN "   ✅ Subagentes copiados para PROJETO_ATUAL/.claude/"
+            else
+                log $YELLOW "   ⚠️  Pasta 'agents' não foi criada pelo download"
+            fi
+        else
+            log $RED "   ❌ Erro no download de subagentes"
         fi
         cd - > /dev/null
     else
-        log $YELLOW "   ⚠️  Script de subagentes não encontrado"
+        log $YELLOW "   ⚠️  Script de subagentes não encontrado em: FERRAMENTAS/subagentesclaude/download-subagents.sh"
     fi
     
     # Instalar BMAD automaticamente em PROJETO_ATUAL
@@ -200,16 +211,23 @@ create_basic_workspace() {
     if [ -f "BMAD/install-bmad.sh" ]; then
         cd "BMAD"
         chmod +x install-bmad.sh
-        ./install-bmad.sh > /dev/null 2>&1
-        
-        # Copiar para PROJETO_ATUAL
-        if [ -d "bmad-ecosystem" ]; then
-            cp -r bmad-ecosystem "../PROJETO_ATUAL/"
-            log $GREEN "   ✅ BMAD aplicado"
+        log $CYAN "   📂 Executando instalação BMAD..."
+        if ./install-bmad.sh; then
+            log $GREEN "   ✅ Instalação BMAD concluída"
+            
+            # Copiar para PROJETO_ATUAL
+            if [ -d "bmad-ecosystem" ]; then
+                cp -r bmad-ecosystem "../PROJETO_ATUAL/"
+                log $GREEN "   ✅ BMAD copiado para PROJETO_ATUAL/bmad-ecosystem/"
+            else
+                log $YELLOW "   ⚠️  Pasta 'bmad-ecosystem' não foi criada pela instalação"
+            fi
+        else
+            log $RED "   ❌ Erro na instalação BMAD"
         fi
         cd - > /dev/null
     else
-        log $YELLOW "   ⚠️  BMAD não encontrado"
+        log $YELLOW "   ⚠️  BMAD não encontrado em: BMAD/install-bmad.sh"
     fi
     
     # Copiar configurações de APIs
@@ -258,6 +276,25 @@ EOF
     
     echo ""
     log $GREEN "🎉 Ambiente configurado com sucesso!"
+    echo ""
+    
+    # Mostrar resumo do que foi instalado
+    log $CYAN "📋 Resumo da instalação em PROJETO_ATUAL:"
+    if [ -d "PROJETO_ATUAL/.claude" ]; then
+        log $GREEN "   ✅ Subagentes: PROJETO_ATUAL/.claude/"
+    fi
+    if [ -d "PROJETO_ATUAL/bmad-ecosystem" ]; then
+        log $GREEN "   ✅ BMAD: PROJETO_ATUAL/bmad-ecosystem/"
+    fi
+    if [ -d "PROJETO_ATUAL/apis" ]; then
+        log $GREEN "   ✅ APIs: PROJETO_ATUAL/apis/"
+    fi
+    if [ -d "PROJETO_ATUAL/credenciais" ]; then
+        log $GREEN "   ✅ Credenciais: PROJETO_ATUAL/credenciais/"
+    fi
+    
+    # MCPs são instalados globalmente
+    log $CYAN "   ℹ️  MCPs são instalados globalmente no Claude Code"
     echo ""
 }
 
