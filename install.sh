@@ -192,9 +192,23 @@ create_basic_workspace() {
             
             # Copiar para PROJETO_ATUAL
             if [ -d "agents" ]; then
-                mkdir -p "../../PROJETO_ATUAL/.claude"
-                cp -r agents "../../PROJETO_ATUAL/.claude/"
-                log $GREEN "   ✅ Subagentes copiados para PROJETO_ATUAL/.claude/"
+                mkdir -p "../../PROJETO_ATUAL/.claude/agents"
+                
+                # Copiar arquivos YAML diretamente se existirem
+                YAML_COPIED=0
+                if find agents -name "*.yaml" -o -name "*.yml" | head -1 | grep -q .; then
+                    find agents -name "*.yaml" -o -name "*.yml" -exec cp {} "../../PROJETO_ATUAL/.claude/agents/" \;
+                    YAML_COUNT=$(find "../../PROJETO_ATUAL/.claude/agents" -name "*.yaml" -o -name "*.yml" | wc -l | tr -d ' ')
+                    log $GREEN "   ✅ $YAML_COUNT arquivos YAML copiados para .claude/agents/"
+                    YAML_COPIED=1
+                fi
+                
+                # Se não tem YAML, copiar estrutura completa para exploração
+                if [ $YAML_COPIED -eq 0 ]; then
+                    cp -r agents/* "../../PROJETO_ATUAL/.claude/" 2>/dev/null || true
+                    log $GREEN "   ✅ Estrutura de subagentes copiada para .claude/"
+                    log $CYAN "   📂 Explore .claude/ para encontrar os subagentes"
+                fi
             else
                 log $YELLOW "   ⚠️  Pasta 'agents' não foi criada pelo download"
             fi
@@ -280,8 +294,15 @@ EOF
     
     # Mostrar resumo do que foi instalado
     log $CYAN "📋 Resumo da instalação em PROJETO_ATUAL:"
-    if [ -d "PROJETO_ATUAL/.claude" ]; then
-        log $GREEN "   ✅ Subagentes: PROJETO_ATUAL/.claude/"
+    if [ -d "PROJETO_ATUAL/.claude/agents" ] && [ "$(ls -A PROJETO_ATUAL/.claude/agents/ 2>/dev/null)" ]; then
+        YAML_COUNT=$(find "PROJETO_ATUAL/.claude/agents" -name "*.yaml" -o -name "*.yml" 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$YAML_COUNT" -gt 0 ]; then
+            log $GREEN "   ✅ Subagentes: $YAML_COUNT arquivos YAML em .claude/agents/"
+        else
+            log $GREEN "   ✅ Subagentes: Estrutura baixada em .claude/"
+        fi
+    elif [ -d "PROJETO_ATUAL/.claude" ] && [ "$(ls -A PROJETO_ATUAL/.claude/ 2>/dev/null)" ]; then
+        log $GREEN "   ✅ Subagentes: Estrutura baixada em .claude/"
     fi
     if [ -d "PROJETO_ATUAL/bmad-ecosystem" ]; then
         log $GREEN "   ✅ BMAD: PROJETO_ATUAL/bmad-ecosystem/"
