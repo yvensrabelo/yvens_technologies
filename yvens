@@ -1,0 +1,189 @@
+#!/bin/bash
+
+# ============================================================================
+# YVENS - Sistema de Gerenciamento Principal
+# ============================================================================
+# Comandos disponíveis:
+#   yvens push    - Salva apenas ferramentas/acoplamentos
+#   yvens all     - Salva tudo incluindo PROJETO_ATUAL
+#   yvens pull    - Baixa atualizações do GitHub
+#   yvens new     - Limpa PROJETO_ATUAL para novo projeto
+#   yvens save    - Salva componente em ACOPLAMENTOS
+#   yvens help    - Mostra esta ajuda
+# ============================================================================
+
+set -e
+
+# Cores
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+PURPLE='\033[0;35m'
+NC='\033[0m'
+
+log() {
+    echo -e "${1}${2}${NC}"
+}
+
+# Verificar comando
+COMMAND=${1:-help}
+
+# Diretório do script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+case $COMMAND in
+    push)
+        # Salvar apenas ferramentas e acoplamentos
+        if [ -f "$SCRIPT_DIR/yvens-push.sh" ]; then
+            bash "$SCRIPT_DIR/yvens-push.sh"
+        else
+            log $RED "❌ Script yvens-push.sh não encontrado!"
+            exit 1
+        fi
+        ;;
+        
+    all)
+        # Salvar tudo incluindo PROJETO_ATUAL
+        if [ -f "$SCRIPT_DIR/yvens-all.sh" ]; then
+            bash "$SCRIPT_DIR/yvens-all.sh"
+        else
+            log $RED "❌ Script yvens-all.sh não encontrado!"
+            exit 1
+        fi
+        ;;
+        
+    pull)
+        # Baixar atualizações do GitHub
+        log $CYAN "📥 Baixando atualizações do GitHub..."
+        echo ""
+        
+        # Baixar novo hub
+        curl -s https://raw.githubusercontent.com/yvensrabelo/yvens_technologies/main/yvens_hub.enc -o yvens_hub_new.enc
+        
+        if [ -f "yvens_hub_new.enc" ]; then
+            log $BLUE "🔐 Digite a senha para descriptografar:"
+            read -s -p "🔑 Senha: " PASSWORD
+            echo ""
+            echo ""
+            
+            # Descriptografar
+            if echo "$PASSWORD" | openssl enc -aes-256-cbc -d -salt -in yvens_hub_new.enc -out temp_pull.tar.gz -pass stdin 2>/dev/null; then
+                # Fazer backup do atual
+                if [ -d "FERRAMENTAS" ]; then
+                    log $YELLOW "📦 Fazendo backup do estado atual..."
+                    tar -czf backup_$(date +%Y%m%d_%H%M%S).tar.gz FERRAMENTAS/ ACOPLAMENTOS/ BMAD/ 2>/dev/null || true
+                fi
+                
+                # Extrair novo
+                tar -xzf temp_pull.tar.gz
+                rm temp_pull.tar.gz yvens_hub_new.enc
+                
+                log $GREEN "✅ Atualização concluída!"
+                log $CYAN "   Suas ferramentas e acoplamentos foram atualizados"
+                log $YELLOW "   PROJETO_ATUAL foi preservado"
+            else
+                log $RED "❌ Senha incorreta!"
+                rm yvens_hub_new.enc
+                exit 1
+            fi
+        else
+            log $RED "❌ Erro ao baixar atualizações!"
+            exit 1
+        fi
+        ;;
+        
+    new)
+        # Limpar PROJETO_ATUAL para novo projeto
+        log $CYAN "🆕 Preparando novo projeto..."
+        echo ""
+        
+        if [ -d "PROJETO_ATUAL" ]; then
+            log $YELLOW "⚠️  PROJETO_ATUAL contém:"
+            ls -la PROJETO_ATUAL | head -10
+            echo ""
+            read -p "Deseja limpar PROJETO_ATUAL? (s/N): " CONFIRM
+            
+            if [[ $CONFIRM =~ ^[Ss]$ ]]; then
+                rm -rf PROJETO_ATUAL/*
+                log $GREEN "✅ PROJETO_ATUAL limpo!"
+                
+                # Reinstalar ferramentas
+                log $BLUE "🔧 Reinstalando ferramentas em PROJETO_ATUAL..."
+                bash "$SCRIPT_DIR/install.sh" --setup-only 2>/dev/null || true
+                
+                log $GREEN "✅ Novo ambiente pronto!"
+            else
+                log $YELLOW "❌ Operação cancelada"
+            fi
+        else
+            mkdir -p PROJETO_ATUAL
+            log $GREEN "✅ PROJETO_ATUAL criado!"
+        fi
+        ;;
+        
+    save)
+        # Salvar componente em ACOPLAMENTOS
+        COMPONENT=${2}
+        if [ -z "$COMPONENT" ]; then
+            log $RED "❌ Especifique o componente a salvar!"
+            log $CYAN "   Uso: yvens save <nome-do-componente>"
+            exit 1
+        fi
+        
+        if [ -d "PROJETO_ATUAL/$COMPONENT" ]; then
+            mkdir -p "ACOPLAMENTOS"
+            cp -r "PROJETO_ATUAL/$COMPONENT" "ACOPLAMENTOS/"
+            log $GREEN "✅ Componente '$COMPONENT' salvo em ACOPLAMENTOS!"
+            log $CYAN "   Use 'yvens push' ou 'yvens all' para enviar ao GitHub"
+        elif [ -f "PROJETO_ATUAL/$COMPONENT" ]; then
+            mkdir -p "ACOPLAMENTOS"
+            cp "PROJETO_ATUAL/$COMPONENT" "ACOPLAMENTOS/"
+            log $GREEN "✅ Arquivo '$COMPONENT' salvo em ACOPLAMENTOS!"
+        else
+            log $RED "❌ Componente '$COMPONENT' não encontrado em PROJETO_ATUAL!"
+            exit 1
+        fi
+        ;;
+        
+    help|--help|-h|*)
+        # Mostrar ajuda
+        echo ""
+        log $CYAN "╔════════════════════════════════════════════════════════════════╗"
+        log $CYAN "║              YVENS - Sistema de Gerenciamento v2.0             ║"
+        log $CYAN "╚════════════════════════════════════════════════════════════════╝"
+        echo ""
+        log $GREEN "Comandos disponíveis:"
+        echo ""
+        log $BLUE "  yvens push"
+        log $NC "    Salva apenas FERRAMENTAS e ACOPLAMENTOS no GitHub"
+        log $NC "    (mantém PROJETO_ATUAL local)"
+        echo ""
+        log $BLUE "  yvens all"
+        log $NC "    Salva TUDO incluindo PROJETO_ATUAL no GitHub"
+        log $NC "    (backup completo com experimentos)"
+        echo ""
+        log $BLUE "  yvens pull"
+        log $NC "    Baixa atualizações do GitHub"
+        log $NC "    (preserva PROJETO_ATUAL)"
+        echo ""
+        log $BLUE "  yvens new"
+        log $NC "    Limpa PROJETO_ATUAL para novo projeto"
+        log $NC "    (reinstala ferramentas automaticamente)"
+        echo ""
+        log $BLUE "  yvens save <componente>"
+        log $NC "    Salva componente de PROJETO_ATUAL em ACOPLAMENTOS"
+        log $NC "    (para reutilização futura)"
+        echo ""
+        log $BLUE "  yvens help"
+        log $NC "    Mostra esta mensagem de ajuda"
+        echo ""
+        log $YELLOW "Fluxo de trabalho recomendado:"
+        log $NC "  1. Experimente em PROJETO_ATUAL (sandbox)"
+        log $NC "  2. Gostou? Salve como PROJETO_NOME e use 'yvens all'"
+        log $NC "  3. Não gostou? Use 'yvens push' para salvar só ferramentas"
+        log $NC "  4. Componente útil? Use 'yvens save <nome>'"
+        echo ""
+        ;;
+esac

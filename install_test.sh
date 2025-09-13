@@ -76,7 +76,7 @@ check_basic_requirements() {
 download_encrypted_hub() {
     log $CYAN "📦 Baixando YVENS_TECHNOLOGIES v2.0..."
     
-    local repo_url="https://raw.githubusercontent.com/yvensrabelo/yvens_technologies/main/yvens_hub.enc"
+    local repo_url="https://raw.githubusercontent.com/yvensrabelo/yvens_technologies_v2/main/yvens_hub.enc"
     local encrypted_file="yvens_hub.enc"
     
     # Download com indicador de progresso
@@ -99,32 +99,19 @@ download_encrypted_hub() {
 # Descriptografar e criar workspace básico
 decrypt_and_setup_workspace() {
     log $CYAN "🔓 Descriptografando YVENS_TECHNOLOGIES v2.0..."
-    log $BLUE "🔑 Digite a SENHA MASTER para acessar YVENS_TECHNOLOGIES:"
-    log $YELLOW "   (Solicite a senha ao proprietário do hub)"
-    echo ""
-    # Verificar se stdin está conectado ao terminal
-    if [ -t 0 ]; then
-        # Terminal interativo normal
-        read -s -p "🔐 Senha: " master_password
-    else
-        # Executando via pipe (curl | bash) - tentar múltiplas abordagens
-        if [ -r /dev/tty ]; then
-            read -s -p "🔐 Senha: " master_password < /dev/tty
-        else
-            # Fallback: tentar stdin direto (para ambientes automatizados)
-            echo "🔐 Digite a senha e pressione Enter:"
-            read master_password
-        fi
-    fi
-    # Remover qualquer quebra de linha no final da senha
-    master_password=$(printf '%s' "$master_password" | tr -d '\n\r')
-    echo ""
+    log $BLUE "🔑 Usando senha de teste..."
+    master_password="307031!YvensRabelo"
     echo ""
     
     local temp_tar="yvens_hub_temp.tar.gz"
     
-    # Descriptografar com senha
-    if openssl enc -aes-256-cbc -d -salt -in "yvens_hub.enc" -out "$temp_tar" -pass pass:"$master_password" 2>/dev/null; then
+    # Descriptografar com senha usando stdin
+    printf '%s' "$master_password" | openssl enc -aes-256-cbc -d -salt -in "yvens_hub.enc" -out "$temp_tar" -pass stdin
+    decrypt_result=$?
+    echo "DEBUG: Resultado da descriptografia: $decrypt_result"
+    ls -la "$temp_tar" || echo "Arquivo temp_tar não criado"
+    
+    if [ $decrypt_result -eq 0 ] && [ -f "$temp_tar" ]; then
         echo ""
         log $GREEN "✅ Hub descriptografado com sucesso!"
         
@@ -151,113 +138,38 @@ decrypt_and_setup_workspace() {
     fi
 }
 
-# Criar workspace e instalar automaticamente
+# Criar workspace básico (ÚNICA AÇÃO AUTOMÁTICA)
 create_basic_workspace() {
-    log $CYAN "🚧 Configurando ambiente de trabalho..."
-    echo ""
+    log $CYAN "🚧 Criando workspace básico..."
     
-    # Criar PROJETO_ATUAL se não existir
-    if [ ! -d "PROJETO_ATUAL" ]; then
-        mkdir -p "PROJETO_ATUAL"
-        log $GREEN "✅ PROJETO_ATUAL criado"
+    # Verificar se já existe
+    if [ -d "me-de-um-nome" ]; then
+        log $GREEN "✅ Workspace 'me-de-um-nome' já existe"
     else
-        log $YELLOW "⚠️  PROJETO_ATUAL já existe"
-    fi
-    
-    # Instalar MCPs automaticamente em PROJETO_ATUAL
-    log $BLUE "🔌 Instalando MCPs em PROJETO_ATUAL..."
-    if [ -f "FERRAMENTAS/mcps/install-mcps.sh" ]; then
-        cd "FERRAMENTAS/mcps"
-        chmod +x install-mcps.sh
-        # Modificar para instalar em PROJETO_ATUAL
-        INSTALL_DIR="../../PROJETO_ATUAL" ./install-mcps.sh > /dev/null 2>&1
-        cd - > /dev/null
-        log $GREEN "   ✅ MCPs instalados"
-    else
-        log $YELLOW "   ⚠️  Script de MCPs não encontrado"
-    fi
-    
-    # Instalar Subagentes automaticamente em PROJETO_ATUAL
-    log $BLUE "🤖 Instalando Subagentes em PROJETO_ATUAL..."
-    if [ -f "FERRAMENTAS/subagentesclaude/download-subagents.sh" ]; then
-        cd "FERRAMENTAS/subagentesclaude"
-        chmod +x download-subagents.sh
-        ./download-subagents.sh > /dev/null 2>&1
+        # Criar estrutura básica do workspace
+        mkdir -p "me-de-um-nome"/{src,docs,config}
         
-        # Copiar para PROJETO_ATUAL
-        if [ -d "agents" ]; then
-            mkdir -p "../../PROJETO_ATUAL/.claude"
-            cp -r agents "../../PROJETO_ATUAL/.claude/"
-            log $GREEN "   ✅ Subagentes instalados"
-        fi
-        cd - > /dev/null
-    else
-        log $YELLOW "   ⚠️  Script de subagentes não encontrado"
-    fi
-    
-    # Instalar BMAD automaticamente em PROJETO_ATUAL
-    log $BLUE "🎯 Aplicando metodologia BMAD em PROJETO_ATUAL..."
-    if [ -f "BMAD/install-bmad.sh" ]; then
-        cd "BMAD"
-        chmod +x install-bmad.sh
-        ./install-bmad.sh > /dev/null 2>&1
-        
-        # Copiar para PROJETO_ATUAL
-        if [ -d "bmad-ecosystem" ]; then
-            cp -r bmad-ecosystem "../PROJETO_ATUAL/"
-            log $GREEN "   ✅ BMAD aplicado"
-        fi
-        cd - > /dev/null
-    else
-        log $YELLOW "   ⚠️  BMAD não encontrado"
-    fi
-    
-    # Copiar configurações de APIs
-    if [ -d "FERRAMENTAS/apis" ]; then
-        cp -r "FERRAMENTAS/apis" "PROJETO_ATUAL/"
-        log $GREEN "   ✅ APIs configuradas"
-    fi
-    
-    # Copiar credenciais se existirem
-    if [ -d "FERRAMENTAS/credenciais" ] && [ "$(ls -A FERRAMENTAS/credenciais)" ]; then
-        cp -r "FERRAMENTAS/credenciais" "PROJETO_ATUAL/"
-        log $GREEN "   ✅ Credenciais copiadas"
-    fi
-    
-    # Criar README em PROJETO_ATUAL
-    cat > "PROJETO_ATUAL/README.md" << EOF
-# 🧪 PROJETO_ATUAL - Sandbox YVENS_TECHNOLOGIES
+        # Arquivo README básico do workspace
+        cat > "me-de-um-nome/README.md" << EOF
+# 🚧 Workspace YVENS_TECHNOLOGIES
 
-## 🎯 Ambiente de Brainstorm e Experimentação
+Este é seu workspace de desenvolvimento. Será renomeado para o nome do seu projeto.
 
-Este é seu espaço criativo para testar ideias e prototipar soluções.
+## 📁 Estrutura Inicial:
+- \`src/\` - Código fonte do projeto
+- \`docs/\` - Documentação
+- \`config/\` - Configurações
 
-## ✅ Ferramentas Instaladas Automaticamente:
-- MCPs (Model Context Protocols)
-- Subagentes Claude
-- Metodologia BMAD
-- Configurações de APIs
-- Credenciais (se disponíveis)
+## 🛠️ Próximos passos:
+1. Defina o nome do seu projeto
+2. Escolha as ferramentas necessárias  
+3. Configure seu ambiente de desenvolvimento
 
-## 💡 Como usar:
-1. **Experimente livremente** - Este é seu playground
-2. **Gostou de algo?** - Salve como PROJETO_NOME
-3. **Backup completo** - Use \`yvens all\`
-4. **Só ferramentas** - Use \`yvens push\`
-
-## 📁 Para salvar um projeto:
-\`\`\`bash
-# Se gostar do experimento
-mv ../PROJETO_ATUAL ../PROJETO_MEU_SITE
-cd ..
-./yvens-all.sh  # Salva tudo
-\`\`\`
-
-**Divirta-se criando!** 🚀
+**Workspace será personalizado baseado no seu tipo de projeto!**
 EOF
-    
-    echo ""
-    log $GREEN "🎉 Ambiente configurado com sucesso!"
+        
+        log $GREEN "✅ Workspace básico criado"
+    fi
     echo ""
 }
 
@@ -314,13 +226,13 @@ setup_project() {
         return 1
     fi
     
-    # Copiar PROJETO_ATUAL para novo projeto
-    if [ -d "PROJETO_ATUAL" ]; then
-        cp -r "PROJETO_ATUAL" "PROJETO_$project_name"
-        log $GREEN "✅ Projeto salvo como: PROJETO_$project_name"
+    # Renomear workspace
+    if [ -d "me-de-um-nome" ]; then
+        mv "me-de-um-nome" "$project_name"
+        log $GREEN "✅ Workspace renomeado para: $project_name"
     else
-        mkdir -p "PROJETO_$project_name"
-        log $GREEN "✅ PROJETO_$project_name criado"
+        mkdir -p "$project_name"
+        log $GREEN "✅ Workspace $project_name criado"
     fi
     
     echo ""
